@@ -1,0 +1,292 @@
+{
+    "Resources": {
+        "FrontendS3Bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": "website-bucket"
+            }
+        },
+        "CloudFrontDistribution": {
+            "Type": "AWS::CloudFront::Distribution",
+            "Properties": {
+                "DistributionConfig": {
+                    "Origins": [
+                        {
+                            "Id": "WebsiteOrigin",
+                            "DomainName": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        {
+                                            "Ref": "FrontendS3Bucket"
+                                        },
+                                        ".s3.amazonaws.com"
+                                    ]
+                                ]
+                            },
+                            "S3OriginConfig": {
+                                "OriginAccessIdentity": ""
+                            }
+                        }
+                    ],
+                    "DefaultCacheBehavior": {
+                        "TargetOriginId": "WebsiteOrigin",
+                        "ViewerProtocolPolicy": "redirect-to-https",
+                        "AllowedMethods": [
+                            "GET",
+                            "HEAD",
+                            "OPTIONS"
+                        ]
+                    },
+                    "Enabled": true
+                }
+            }
+        },
+        "BackendEC2Instance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": "ami-xxxxxxxx",
+                "InstanceType": "t3.micro",
+                "KeyName": "your-key-pair",
+                "SecurityGroupIds": [
+                    {
+                        "Ref": "BackendSecurityGroup"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "# Script to configure and start your Flask backend server\n",
+                                "apt-get update\n",
+                                "apt-get install -y python3-pip\n",
+                                "pip3 install flask\n",
+                                "cd /path/to/backend\n",
+                                "python3 app.py\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "BackendSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Security group for the backend instances",
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 80,
+                        "ToPort": 80,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 443,
+                        "ToPort": 443,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ]
+            }
+        },
+        "RDSInstance": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+                "Engine": "mysql",
+                "DBInstanceIdentifier": "database-instance",
+                "MasterUsername": "admin",
+                "MasterUserPassword": "password",
+                "AllocatedStorage": 20,
+                "DBInstanceClass": "db.t3.micro"
+            }
+        },
+        "ContentS3Bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": "content-bucket"
+            }
+        },
+        "AutoScalingGroup": {
+            "Type": "AWS::AutoScaling::AutoScalingGroup",
+            "Properties": {
+                "LaunchConfigurationName": {
+                    "Ref": "BackendLaunchConfiguration"
+                },
+                "MinSize": 2,
+                "MaxSize": 5,
+                "DesiredCapacity": 2,
+                "VPCZoneIdentifier": [
+                    {
+                        "Ref": "VPCSubnet1"
+                    },
+                    {
+                        "Ref": "VPCSubnet2"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "BackendInstance",
+                        "PropagateAtLaunch": true
+                    }
+                ]
+            }
+        },
+        "BackendLaunchConfiguration": {
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
+            "Properties": {
+                "ImageId": "ami-xxxxxxxx",
+                "InstanceType": "t3.micro",
+                "KeyName": "your-key-pair",
+                "SecurityGroups": [
+                    {
+                        "Ref": "BackendSecurityGroup"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "# Script to configure and start your Flask backend server\n",
+                                "apt-get update\n",
+                                "apt-get install -y python3-pip\n",
+                                "pip3 install flask\n",
+                                "cd /path/to/backend\n",
+                                "python3 app.py\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "CognitoUserPool": {
+            "Type": "AWS::Cognito::UserPool",
+            "Properties": {
+                "UserPoolName": "user-pool",
+                "Policies": {
+                    "PasswordPolicy": {
+                        "MinimumLength": 8,
+                        "RequireUppercase": false,
+                        "RequireLowercase": false,
+                        "RequireNumbers": false,
+                        "RequireSymbols": false
+                    }
+                }
+            }
+        },
+        "SESEmailService": {
+            "Type": "AWS::SES::ConfigurationSet",
+            "Properties": {
+                "Name": "email-service",
+                "DeliveryOptions": {
+                    "SendingPoolName": "email-sending-pool"
+                }
+            }
+        },
+        "CloudWatchMonitoring": {
+            "Type": "AWS::CloudWatch::Dashboard",
+            "Properties": {
+                "DashboardName": "monitoring-dashboard",
+                "DashboardBody": {
+                    "Fn::Sub": "{\"widgets\": []}"
+                }
+            }
+        },
+        "FileStorageS3Bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": "file-storage-bucket"
+            }
+        },
+        "Route53DNS": {
+            "Type": "AWS::Route53::HostedZone",
+            "Properties": {
+                "Name": "your-domain.com"
+            }
+        },
+        "WAFService": {
+            "Type": "AWS::WAFv2::WebACL",
+            "Properties": {
+                "Name": "waf-service",
+                "Scope": "REGIONAL",
+                "DefaultAction": {
+                    "Block": {}
+                },
+                "Rules": []
+            }
+        },
+        "DDoSProtection": {
+            "Type": "AWS::Shield::Protection",
+            "Properties": {
+                "Name": "ddos-protection",
+                "ResourceArn": {
+                    "Fn::GetAtt": [
+                        "CloudFrontDistribution",
+                        "DomainName"
+                    ]
+                }
+            }
+        },
+        "ImageProcessingLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": "image-processing",
+                "Runtime": "nodejs14.x",
+                "Handler": "index.handler",
+                "Code": {
+                    "S3Bucket": "lambda-code-bucket",
+                    "S3Key": "image-processing.zip"
+                },
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                }
+            }
+        },
+        "BackgroundTasksLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": "background-tasks",
+                "Runtime": "python3.9",
+                "Handler": "index.handler",
+                "Code": {
+                    "S3Bucket": "lambda-code-bucket",
+                    "S3Key": "background-tasks.zip"
+                },
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LambdaExecutionRole",
+                        "Arn"
+                    ]
+                }
+            }
+        },
+        "LambdaExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "lambda-execution-role",
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ]
+            }
+        }
+    }
+}
