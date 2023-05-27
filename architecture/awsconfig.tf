@@ -1,3 +1,69 @@
+resource "aws_vpc" "main_vpc" {
+  cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_internet_gateway" "main_gateway" {
+  vpc_id = aws_vpc.main_vpc.id
+}
+
+resource "aws_subnet" "public_subnet" {
+  vpc_id                  = aws_vpc.main_vpc.id
+  cidr_block              = "10.0.0.0/24"
+  availability_zone       = "us-west-2a"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main_gateway.id
+  }
+
+  subnet_association {
+    subnet_id = aws_subnet.public_subnet.id
+  }
+}
+
+resource "aws_security_group" "backend_security_group" {
+  vpc_id      = aws_vpc.main_vpc.id
+  name        = "backend-security-group"
+  description = "Security group for the backend instances"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "backend_instance" {
+  ami                    = "ami-xxxxxxxx"
+  instance_type          = "t3.micro"
+  key_name               = "your-key-pair"
+  vpc_security_group_ids = [aws_security_group.backend_security_group.id]
+  subnet_id              = aws_subnet.public_subnet.id
+
+  user_data = <<-EOF
+    #!/bin/bash
+    # Script to configure and start your Flask backend server
+    apt-get update
+    apt-get install -y python3-pip
+    pip3 install flask
+    cd /path/to/backend
+    python3 app.py
+  EOF
+}
+
 resource "aws_s3_bucket" "frontend_bucket" {
   bucket = "website-bucket"
 }
