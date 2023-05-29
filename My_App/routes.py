@@ -1,7 +1,10 @@
-from My_App.app import app, db
-from flask import render_template, request, redirect, url_for, flash
+from app import app
 
 @app.route('/home')
 def index():
     return render_template('index.html')
+
+@app.route('/')
+def working():
+    return "hello world!"
 
