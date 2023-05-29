@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Flask App</title>
+</head>
+<body>
+    <header>
+        <!-- Include any header content here -->
+        <nav>
+            <ul>
+                <!-- Include other navigation links here -->
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('app_route.logout') }}">Logout</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('app_route.login') }}">Login</a></li>
+                    <li><a href="{{ url_for('app_route.register') }}">Register</a></li> <!-- Add this line -->
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+    
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer>
+        <!-- Include any footer content here -->
+    </footer>
+</body>
+</html>

@@ -1,9 +1,15 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import *
 from datetime import datetime
 
+
+
+
+
 db = SQLAlchemy()
+
 
 
 class User(db.Model):
@@ -17,12 +23,12 @@ class User(db.Model):
 
     # Relationships
     support_groups = db.relationship(
-        'SupportGroup', backref='creator', lazy=True)
-    forum_posts = db.relationship('ForumPost', backref='author', lazy=True)
+        'SupportGroup', backref='users', lazy=True)
+    forum_posts = db.relationship('ForumPost', backref='users', lazy=True)
     messages_sent = db.relationship(
-        'Message', foreign_keys='Message.sender_id', backref='sender', lazy=True)
+        'Message', foreign_keys='Message.sender_id', backref='users', lazy=True)
     messages_received = db.relationship(
-        'Message', foreign_keys='Message.receiver_id', backref='receiver', lazy=True)
+        'Message', foreign_keys='Message.receiver_id', backref='received_by', lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -36,7 +42,12 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.username}>'
-
+    
+    def load_user(user_id):
+        # Implement code to load and return the user based on the user_id
+        # This could involve querying your database or other user storage mechanism
+        # Return the user object if found, or None if not found
+        return User.query.get(user_id)
 
 class SupportGroup(db.Model):
     __tablename__ = 'support_groups'
@@ -81,7 +92,7 @@ class ForumPost(db.Model):
         'support_groups.id'), nullable=False)
 
     # Relationships
-    author = db.relationship('User', backref='forum_posts')
+    author = db.relationship('User', backref='authored_posts')
     comments = db.relationship('Comment', backref='forum_post', lazy=True)
 
     def __repr__(self):
