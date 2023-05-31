@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Email, EqualTo
+from wtforms import StringField, PasswordField, SubmitField, BooleanField,IntegerField
+from wtforms.validators import DataRequired, Email, EqualTo, Length
 
 
 
@@ -18,3 +18,11 @@ class LoginForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     remember_me = BooleanField('Remember Me')
     submit = SubmitField('Log In')
+    
+
+class ProfileForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired(), Length(max=50)])
+    age = IntegerField('Age', validators=[DataRequired()])
+    # Add more fields as needed
+
+    submit = SubmitField('Submit')

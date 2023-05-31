@@ -3,14 +3,9 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import *
 from datetime import datetime
-
-
-
-
+import bcrypt
 
 db = SQLAlchemy()
-
-
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -31,10 +26,10 @@ class User(db.Model):
         'Message', foreign_keys='Message.receiver_id', backref='received_by', lazy=True)
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
     def complete_profile(self):
         self.profile_completed = True

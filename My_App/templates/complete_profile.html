@@ -1,0 +1,8 @@
+<h1>Complete Profile</h1>
+<form method="POST" action="{{ url_for('complete_profile') }}">
+    {{ form.hidden_tag() }}
+    {{ form.name.label }} {{ form.name() }}
+    {{ form.age.label }} {{ form.age() }}
+    <!-- Add more form fields as needed -->
+    <button type="submit">Submit</button>
+</form>
