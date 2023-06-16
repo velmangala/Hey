@@ -1,0 +1,79 @@
+<!-- forum_posts.html -->
+<!-- Add pagination links -->
+<div class="pagination">
+  {% if posts.has_prev %}
+    <a href="{{ url_for('app_routes.forum_posts', page=posts.prev_num, sorting=sorting, category=category) }}">Previous</a>
+  {% endif %}
+
+  {% for num in posts.iter_pages() %}
+    {% if num %}
+      {% if posts.page == num %}
+        <strong>{{ num }}</strong>
+      {% else %}
+        <a href="{{ url_for('app_routes.forum_posts', page=num, sorting=sorting, category=category) }}">{{ num }}</a>
+      {% endif %}
+    {% else %}
+      <span class="ellipsis">&hellip;</span>
+    {% endif %}
+  {% endfor %}
+
+  {% if posts.has_next %}
+    <a href="{{ url_for('app_routes.forum_posts', page=posts.next_num, sorting=sorting, category=category) }}">Next</a>
+  {% endif %}
+</div>
+
+<!-- Add sorting options -->
+<form method="get" action="{{ url_for('app_routes.forum_posts') }}">
+  <label for="sorting">Sort by:</label>
+  <select id="sorting" name="sort">
+    <option value="date" {% if sorting == 'date' %}selected{% endif %}>Date</option>
+    <option value="title" {% if sorting == 'title' %}selected{% endif %}>Title</option>
+    <option value="comments" {% if sorting == 'comments' %}selected{% endif %}>Number of Comments</option>
+  </select>
+  <button type="submit">Sort</button>
+</form>
+
+<!-- Add filtering options -->
+<form method="get" action="{{ url_for('app_routes.forum_posts') }}">
+  <label for="category">Filter by Category:</label>
+  <select id="category" name="category">
+    <option value="">All</option>
+    <option value="category1" {% if category == 'category1' %}selected{% endif %}>Category 1</option>
+    <option value="category2" {% if category == 'category2' %}selected{% endif %}>Category 2</option>
+    <option value="category3" {% if category == 'category3' %}selected{% endif %}>Category 3</option>
+  </select>
+  <button type="submit">Filter</button>
+</form>
+
+<!-- Display the forum posts -->
+{% for post in posts.items %}
+  <div class="post">
+    <h3>{{ post.title }}</h3>
+    <p>{{ post.content }}</p>
+    <p>Posted by: {{ post.user.username }}</p>
+    <p>Created at: {{ post.created_at }}</p>
+  </div>
+{% endfor %}
+
+<!-- Add pagination links -->
+<div class="pagination">
+  {% if posts.has_prev %}
+    <a href="{{ url_for('app_routes.forum_posts', page=posts.prev_num, sorting=sorting, category=category) }}">Previous</a>
+  {% endif %}
+
+  {% for num in posts.iter_pages() %}
+    {% if num %}
+      {% if posts.page == num %}
+        <strong>{{ num }}</strong>
+      {% else %}
+        <a href="{{ url_for('app_routes.forum_posts', page=num, sorting=sorting, category=category) }}">{{ num }}</a>
+      {% endif %}
+    {% else %}
+      <span class="ellipsis">&hellip;</span>
+    {% endif %}
+  {% endfor %}
+
+  {% if posts.has_next %}
+    <a href="{{ url_for('app_routes.forum_posts', page=posts.next_num, sorting=sorting, category=category) }}">Next</a>
+  {% endif %}
+</div>

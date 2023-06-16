@@ -11,6 +11,8 @@
                 <!-- Include other navigation links here -->
                 {% if current_user.is_authenticated %}
                     <li><a href="{{ url_for('app_route.logout') }}">Logout</a></li>
+                    <li><a href="{{ url_for('home') }}">Home</a></li>
+                    <li><a href="{{ url_for('forum') }}">Forum</a></li>
                 {% else %}
                     <li><a href="{{ url_for('app_route.login') }}">Login</a></li>
                     <li><a href="{{ url_for('app_route.register') }}">Register</a></li> <!-- Add this line -->

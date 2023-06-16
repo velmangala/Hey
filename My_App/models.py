@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import backref
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from email_validator import *
@@ -45,7 +46,7 @@ class User(db.Model):
         return User.query.get(user_id)
 
 class SupportGroup(db.Model):
-    __tablename__ = 'support_groups'
+    __tablename__ = 'support_group'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -64,6 +65,20 @@ class SupportGroup(db.Model):
 
     def __repr__(self):
         return f'<SupportGroup {self.name}>'
+    
+    # Define the relationship with User model
+    members = db.relationship('User', secondary='user_support_group', backref=backref(
+        'support_groups', lazy='dynamic'))
+
+
+# Create a join table for the many-to-many relationship
+user_support_group = db.Table(
+    'user_support_group',
+    db.Column('user_id', db.Integer, db.ForeignKey(
+        'user.id'), primary_key=True),
+    db.Column('support_group_id', db.Integer, db.ForeignKey(
+        'support_group.id'), primary_key=True)
+)
 
 
 class SupportGroupMember(db.Model):
@@ -72,43 +87,34 @@ class SupportGroupMember(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey(
         'users.id'), primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey(
-        'support_groups.id'), primary_key=True)
+        'support_group.id'), primary_key=True)
 
 
 class ForumPost(db.Model):
     __tablename__ = 'forum_posts'
-
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    author_id = db.Column(
-        db.Integer, db.ForeignKey('users.id'), nullable=False)
-    support_group_id = db.Column(db.Integer, db.ForeignKey(
-        'support_groups.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user = db.relationship('User', backref=backref('forum_posts', lazy=True))
+    likes = db.relationship('PostLike', backref='post', lazy='dynamic')
 
-    # Relationships
-    author = db.relationship('User', backref='authored_posts')
-    comments = db.relationship('Comment', backref='forum_post', lazy=True)
+    def __init__(self, title, content, user_id):
+        self.title = title
+        self.content = content
+        self.user_id = user_id
+        
 
-    def __repr__(self):
-        return f'<ForumPost {self.title}>'
-
-
-class Comment(db.Model):
-    __tablename__ = 'comments'
-
+class PostLike(db.Model):
+    __tablename__ = 'post_likes'
     id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
-    author_id = db.Column(
-        db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey(
         'forum_posts.id'), nullable=False)
 
-    # Relationships
-    author = db.relationship('User', backref='comments')
 
-    def __repr__(self):
-        return f'<Comment {self.id}>'
+
     
 class Message(db.Model):
     __tablename__ = 'messages'
@@ -129,3 +135,20 @@ class Message(db.Model):
 
     def __repr__(self):
         return f'<Message {self.id}>'
+    
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Foreign key relationship to ForumPost model
+    post_id = db.Column(db.Integer, db.ForeignKey(
+        'forum_posts.id'), nullable=False)
+    post = db.relationship('ForumPost', backref=db.backref(
+        'comments', cascade='all, delete-orphan'))
+
+    def __repr__(self):
+        return f"Comment(id={self.id}, content='{self.content}', timestamp={self.timestamp})"

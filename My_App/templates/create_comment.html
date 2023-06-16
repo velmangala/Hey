@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Create Comment</h2>
+  <form method="POST" action="{{ url_for('create_comment', post_id=post_id) }}">
+    {{ form.csrf_token }}
+    {{ form.content.label }} {{ form.content }}
+    {% for error in form.content.errors %}
+      <span class="error">{{ error }}</span>
+    {% endfor %}
+    <button type="submit">Submit</button>
+  </form>
+{% endblock %}

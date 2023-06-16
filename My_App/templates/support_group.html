@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Support Groups</h1>
+
+  <form method="POST" action="{{ url_for('app_routes.support_group') }}">
+    {{ form.csrf_token }}
+
+    <div class="form-group">
+      <input type="text" name="search" class="form-control" placeholder="Search">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+
+  <ul>
+    {% for group in support_group %}
+      <li>
+        {{ group.title }}
+        {% if current_user.is_authenticated %}
+          {% if group in current_user.support_groups %}
+            <form method="POST" action="{{ url_for('app_routes.leave_support_group', group_id=group.id) }}">
+              {{ form.csrf_token }}
+              <button type="submit" class="btn btn-danger btn-sm">Leave</button>
+            </form>
+          {% else %}
+            <form method="POST" action="{{ url_for('app_routes.join_support_group', group_id=group.id) }}">
+              {{ form.csrf_token }}
+              <button type="submit" class="btn btn-primary btn-sm">Join</button>
+            </form>
+          {% endif %}
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}
